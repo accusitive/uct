@@ -1,0 +1,120 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches:
+      # Delete whichever of these you aren't using.
+      - master
+
+jobs:
+  cross-test:
+    name: Test on ${{ matrix.target }} (using cross)
+    runs-on: ubuntu-latest
+    env:
+      # Optional: see note below
+      RUSTFLAGS: '--cfg using_cross'
+      RUSTDOCFLAGS: '--cfg using_cross'
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          # 32-bit x86
+          - i686-unknown-linux-gnu
+          # 32-bit ARM (on Android)
+          - armv7-linux-androideabi
+          # 64-bit ARM (on Android)
+          - aarch64-linux-android
+          # 32-bit MIPS(-BE) (that is: big endian)
+          - mips-unknown-linux-gnu
+          # 64-bit MIPS(-BE) (that is: big endian)
+          - mips64-unknown-linux-gnuabi64
+          # Tons of others...
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+      - run: cargo install cross
+      # Note: just use `cross` as you would `cargo`, but always
+      # pass the `--target=${{ matrix.target }}` arg. (Yes, really).
+      - run: cross test --verbose --target=${{ matrix.target }} --no-default-features
+      - run: cross test --verbose --target=${{ matrix.target }} --all-features
+  miri-test:
+    name: Test with miri
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: nightly
+          components: miri
+      - run: cargo miri test --verbose --no-default-features
+      - run: cargo miri test --verbose --all-features
+    sanitizer-test:
+    name: Test with -Zsanitizer=${{ matrix.sanitizer }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [address, memory, thread, leak]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: nightly
+          components: rust-src
+      - name: Test with sanitizer
+        env:
+          RUSTFLAGS: -Zsanitizer=${{ matrix.sanitizer }}
+          RUSTDOCFLAGS: -Zsanitizer=${{ matrix.sanitizer }}
+          # only needed by asan
+          ASAN_OPTIONS: detect_stack_use_after_return=1
+          # Asan's leak detection occasionally complains
+          # about some small leaks if backtraces are captured,
+          # so ensure they're not
+          RUST_BACKTRACE: 0
+      run: |
+        cargo test -Zbuild-std --verbose --target=x86_64-unknown-linux-gnu --no-default-features
+        cargo test -Zbuild-std --verbose --target=x86_64-unknown-linux-gnu --all-features
+        # ...
+  cargo-check:
+    name: Check for warnings
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -Dwarnings
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+      - run: cargo check --workspace --all-targets --verbose --no-default-features
+      - run: cargo check --workspace --all-targets --verbose --all-features
+   clippy:
+    name: Lint with Clippy
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -Dwarnings
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          components: clippy
+      - run: cargo clippy --workspace --all-targets --verbose --no-default-features
+      - run: cargo clippy --workspace --all-targets --verbose --all-features
+   rustfmt:
+    name: Verify code formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+   check-rustdoc-links:
+    name: Check intra-doc links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: nightly
+      # Important: This doesn't work for multi-crate workspaces, which
+      # will require you call `cargo rustdoc -p` for each package! (See below)
+      # (Also, note that this is `cargo rustdoc` and not `cargo doc`)
+      - run: cargo rustdoc --all-features -- -D warnings
