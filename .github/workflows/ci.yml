@@ -82,17 +82,17 @@ jobs:
       - run: cross test --verbose --target=${{ matrix.target }} --all-features
 
 
-  # miri-test:
-  #   name: Test with miri
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - uses: hecrj/setup-rust-action@v1
-  #       with:
-  #         rust-version: nightly
-  #         components: miri
-  #     - run: cargo miri test --verbose --no-default-features
-  #     - run: cargo miri test --verbose --all-features
+  miri-test:
+    name: Test with miri
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: nightly
+          components: miri
+      - run: cargo miri test --verbose --no-default-features
+      - run: cargo miri test --verbose --all-features
 
   # sanitizer-test:
   #   name: Test with -Zsanitizer=${{ matrix.sanitizer }}
