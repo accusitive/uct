@@ -119,36 +119,36 @@ jobs:
           RUST_BACKTRACE: 0
         run: cargo test -Zbuild-std --verbose --target=x86_64-unknown-linux-gnu --all-features
   
-  # cargo-check:
-  #   name: Check for warnings
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     RUSTFLAGS: -Dwarnings
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - uses: hecrj/setup-rust-action@v1
-  #     - run: cargo check --workspace --all-targets --verbose --no-default-features
-  #     - run: cargo check --workspace --all-targets --verbose --all-features
+  cargo-check:
+    name: Check for warnings
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -Dwarnings
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+      - run: cargo check --workspace --all-targets --verbose --no-default-features
+      - run: cargo check --workspace --all-targets --verbose --all-features
   
-  # clippy:
-  #   name: Lint with Clippy
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     RUSTFLAGS: -Dwarnings
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - uses: hecrj/setup-rust-action@v1
-  #       with:
-  #         components: clippy
-  #     - run: cargo clippy --workspace --all-targets --verbose --no-default-features
-  #     - run: cargo clippy --workspace --all-targets --verbose --all-features
+  clippy:
+    name: Lint with Clippy
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -Dwarnings
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          components: clippy
+      - run: cargo clippy --workspace --all-targets --verbose --no-default-features
+      - run: cargo clippy --workspace --all-targets --verbose --all-features
 
-  # rustfmt:
-  #   name: Verify code formatting
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - uses: hecrj/setup-rust-action@v1
-  #       with:
-  #         components: rustfmt
-  #     - run: cargo fmt --all -- --check
+  rustfmt:
+    name: Verify code formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
